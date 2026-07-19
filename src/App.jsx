@@ -63,7 +63,10 @@ function App() {
       const result = await createRoom(validateName())
       saveSession(result)
       setMessage('')
-    } catch (error) { setMessage(firebaseMessage(error)) }
+    } catch (error) { 
+      console.error('handleCreate error:', error)
+      setMessage(firebaseMessage(error)) 
+    }
     finally { setBusy(false) }
   }
 
@@ -74,7 +77,10 @@ function App() {
       const result = await joinRoom(joinCode, validateName())
       saveSession(result)
       setMessage('')
-    } catch (error) { setMessage(firebaseMessage(error)) }
+    } catch (error) { 
+      console.error('handleJoin error:', error)
+      setMessage(firebaseMessage(error)) 
+    }
     finally { setBusy(false) }
   }
 
@@ -86,7 +92,10 @@ function App() {
   async function handleLeave() {
     setBusy(true)
     try { await leaveRoom(session.roomCode, session.playerId, isHost) }
-    catch (error) { setMessage(firebaseMessage(error)) }
+    catch (error) { 
+      console.error('handleLeave error:', error)
+      setMessage(firebaseMessage(error)) 
+    }
     localStorage.removeItem(SAVED_SESSION_KEY)
     setSession(null); setRoom(null); setBusy(false)
   }
@@ -94,7 +103,10 @@ function App() {
   async function handleStart() {
     setBusy(true); setMessage('')
     try { await startRoom(session.roomCode, session.playerId) }
-    catch (error) { setMessage(firebaseMessage(error)) }
+    catch (error) { 
+      console.error('handleStart error:', error)
+      setMessage(firebaseMessage(error)) 
+    }
     finally { setBusy(false) }
   }
 
@@ -142,14 +154,14 @@ function App() {
             {players.map((player) => (
               <article className="player" key={player.id}>
                 <span className="avatar">{player.name.slice(0, 1).toUpperCase()}</span>
-                <div><strong>{player.name}{player.id === session.playerId ? ' · tú' : ''}</strong><small>{player.id === room.hostId ? 'Anfitriona' : player.online === false ? 'Desconectado' : 'Listo para jugar'}</small></div>
+                <div><strong>{player.name}{player.id === session.playerId ? ' · tú' : ''}</strong><small>{player.id === room.hostId ? 'Anfitriona' : player.online === false ? 'Desconectado' : 'En vivo'}</small></div>
                 <span>{player.id === room.hostId ? '👑' : player.online === false ? '○' : '●'}</span>
               </article>
             ))}
           </div>
           {room?.status === 'waiting' && isHost && <button className="primary" onClick={handleStart} disabled={busy || players.length < 2}>{players.length < 2 ? 'Esperando otro jugador…' : 'Empezar partida'}</button>}
           {room?.status === 'waiting' && !isHost && <p className="waiting-text">Esperando a que la anfitriona inicie…</p>}
-          {room?.status === 'playing' && <div className="success-card"><span>🎵</span><div><strong>¡La sala ya está sincronizada!</strong><p>La siguiente versión agregará canciones, turnos y líneas del tiempo.</p></div></div>}
+          {room?.status === 'playing' && <div className="success-card"><span>🎵</span><div><strong>¡La sala ya está sincronizada!</strong><p>La siguiente versión agregará canciones, turnos y tablas de puntuaciones.</p></div></div>}
           {message && <p className="notice">{message}</p>}
         </section>
       </div>
@@ -159,11 +171,18 @@ function App() {
 
 function firebaseMessage(error) {
   const code = error?.code || ''
+  const message = error?.message || ''
+  
+  console.log('Firebase error details:', { code, message })
+  
   if (code.includes('auth/operation-not-allowed')) return 'Activa el proveedor Anónimo en Firebase Authentication.'
   if (code.includes('auth/unauthorized-domain')) return 'Este dominio todavía no está autorizado en Firebase.'
-  if (code.includes('permission-denied')) return 'Firebase rechazó el acceso. Revisa las reglas de Realtime Database.'
+  if (code.includes('permission-denied') || message.includes('Permission denied')) return 'Firebase rechazó el acceso. Revisa las reglas de Realtime Database.'
   if (code.includes('network-request-failed')) return 'No se pudo conectar. Revisa tu conexión a internet.'
-  return error?.message || 'Ocurrió un error inesperado.'
+  if (code.includes('auth/') || message.includes('auth/')) return `Error de autenticación: ${code || message}`
+  if (code.includes('database-url-not-specified')) return 'La URL de la base de datos no está configurada en Firebase.'
+  
+  return `Error: ${code || message || 'Ocurrió un error inesperado.'}`
 }
 
 export default App
