@@ -21,9 +21,10 @@ export async function ensureAnonymousUser() {
   if (auth.currentUser) return auth.currentUser
   try {
     const credential = await signInAnonymously(auth)
+    console.log('Anonymous user signed in:', credential.user.uid)
     return credential.user
   } catch (error) {
-    console.error('Error en signInAnonymously:', error.code, error.message)
+    console.error('Error in signInAnonymously:', error.code, error.message)
     throw error
   }
 }
