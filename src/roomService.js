@@ -50,6 +50,7 @@ export async function createRoom(playerName) {
     })
 
     await registerPresence(roomCode, user.uid)
+    console.log('Room created successfully:', roomCode)
     return { roomCode, playerId: user.uid }
   } catch (error) {
     console.error('Error in createRoom:', error.code, error.message)
@@ -79,6 +80,7 @@ export async function joinRoom(roomCode, playerName) {
     })
 
     await registerPresence(normalizedCode, user.uid)
+    console.log('Successfully joined room:', normalizedCode)
     return { roomCode: normalizedCode, playerId: user.uid }
   } catch (error) {
     console.error('Error in joinRoom:', error.code, error.message)
@@ -91,6 +93,7 @@ async function registerPresence(roomCode, playerId) {
     const onlineRef = ref(db, `rooms/${roomCode}/players/${playerId}/online`)
     await set(onlineRef, true)
     await onDisconnect(onlineRef).set(false)
+    console.log('Presence registered for:', playerId)
   } catch (error) {
     console.error('Error in registerPresence:', error.code, error.message)
     throw error
@@ -117,6 +120,7 @@ export async function startRoom(roomCode, playerId) {
       status: 'playing',
       startedAt: serverTimestamp(),
     })
+    console.log('Room started:', roomCode)
   } catch (error) {
     console.error('Error in startRoom:', error.code, error.message)
     throw error
@@ -128,8 +132,10 @@ export async function leaveRoom(roomCode, playerId, isHost) {
   try {
     if (isHost) {
       await remove(ref(db, `rooms/${roomCode}`))
+      console.log('Room deleted by host:', roomCode)
     } else {
       await remove(ref(db, `rooms/${roomCode}/players/${playerId}`))
+      console.log('Player removed from room:', playerId)
     }
   } catch (error) {
     console.error('Error in leaveRoom:', error.code, error.message)
